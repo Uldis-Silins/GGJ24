@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 42a59ff5604b2440684a379f325d1777, type: 3}
+  m_Name: Character Data
+  m_EditorClassIdentifier: 
+  prefabs:
+  - name: Orange
+    prefab: {fileID: 6170051191005555780, guid: c8e9e47c00e4b4d1393986d7f2b5668e, type: 3}
+    roomID: 0
+  - name: Beak
+    prefab: {fileID: 6791094878111338945, guid: d24f1e5dd09974b31aa1895e61502cc0, type: 3}
+    roomID: 1
+  - name: Bear
+    prefab: {fileID: 658258051046681011, guid: 8438029bf2ccc417fb515cc96be80232, type: 3}
+    roomID: 2
+  - name: Meta
+    prefab: {fileID: 2881250256086303558, guid: d08aad52a932e43c4822d15fe591275a, type: 3}
+    roomID: 3
+  - name: Dragon
+    prefab: {fileID: 1568512148855744843, guid: fa86e3e50be6142a387f45d0fca824ca, type: 3}
+    roomID: 4
+  - name: Chick
+    prefab: {fileID: 5207347654995501042, guid: efb02e97eaaf9490d8c07f98f2fe98ee, type: 3}
+    roomID: 5
+  - name: Cheer
+    prefab: {fileID: 2203652486545187051, guid: 302815c50d514464a9f17e9878bc432a, type: 3}
+    roomID: 6
+  - name: xman
+    prefab: {fileID: 657022770683945486, guid: 8e3152aa6e731409b9282915c5a48abb, type: 3}
+    roomID: 7

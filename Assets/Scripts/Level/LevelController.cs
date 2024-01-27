@@ -16,6 +16,8 @@ public class LevelController : MonoBehaviour
     }
 
     public Camera mainCamera;
+    public Room roomPrefab;
+    public Transform roomParent;
     public List<Room> rooms;
 
     public float margin = 0.2f;
@@ -46,7 +48,19 @@ public class LevelController : MonoBehaviour
     {
         mainCamera.orthographic = true;
 
+        if(rooms != null)
+        {
+            for (int i = 0; i < rooms.Count; i++)
+            {
+                Destroy(rooms[i].gameObject);
+            }
+        }
+
+        rooms.Clear();
+
         m_cells = new Cell[3,3];
+
+        SpawnRooms();
 
         for (int y = 0; y < m_cells.GetLength(0); y++)
         {
@@ -57,12 +71,9 @@ public class LevelController : MonoBehaviour
                 m_cells[x, y] = new Cell(rooms[index]);
 
                 Room room = m_cells[x, y].room;
-                //Color c = room.type == Room.RoomType.Circle ? Color.red : Color.white;
 
-                room.ToggleInteractable(room.type != Room.RoomType.None);
-
-                //rooms[index].GetComponent<Renderer>().material.color = c;
-
+                room.ToggleInteractable(!room.IsEmpty);
+                
                 rooms[index].transform.position = new Vector3(x, y) + new Vector3(margin * x, margin * y) + m_parentOffset;
             }
         }
@@ -75,7 +86,6 @@ public class LevelController : MonoBehaviour
         }
 
         StartCoroutine(RandomizeRooms());
-        //CheckNeighbors();
     }
 
     private void Update()
@@ -108,7 +118,7 @@ public class LevelController : MonoBehaviour
 
                     targetIndex.Clamp(Vector2Int.zero, new Vector2Int(m_cells.GetLength(0) - 1, m_cells.GetLength(1) - 1));
 
-                    if (m_cells[targetIndex.x, targetIndex.y].room.type == Room.RoomType.None)
+                    if (m_cells[targetIndex.x, targetIndex.y].room.IsEmpty)
                     {
                         targetPos.x = mouseWorldPos.x;
                         targetPos.y = m_selectedRoom.transform.position.y;
@@ -118,7 +128,7 @@ public class LevelController : MonoBehaviour
 
                     targetIndex.Clamp(Vector2Int.zero, new Vector2Int(m_cells.GetLength(0) - 1, m_cells.GetLength(1) - 1));
 
-                    if (m_cells[targetIndex.x, targetIndex.y].room.type == Room.RoomType.None)
+                    if (m_cells[targetIndex.x, targetIndex.y].room.IsEmpty)
                     {
                         targetPos.y = mouseWorldPos.y;
                         targetPos.x = m_selectedRoom.transform.position.x;
@@ -156,7 +166,7 @@ public class LevelController : MonoBehaviour
 
                     targetIndex.Clamp(Vector2Int.zero, new Vector2Int(m_cells.GetLength(0) - 1, m_cells.GetLength(1) - 1));
 
-                    if (m_cells[targetIndex.x, targetIndex.y].room.type == Room.RoomType.None)
+                    if (m_cells[targetIndex.x, targetIndex.y].room.IsEmpty)
                     {
                         Swap(roomIndex, targetIndex, true);
                     }
@@ -179,6 +189,7 @@ public class LevelController : MonoBehaviour
         {
             winLabel.gameObject.SetActive(false);
             Swap(new Vector2Int(Random.Range(0, 3), Random.Range(0, 3)), new Vector2Int(Random.Range(0, 3), Random.Range(0, 3)), true);
+
             if(CheckNeighbors())
             {
                 winLabel.gameObject.SetActive(true);
@@ -249,32 +260,53 @@ public class LevelController : MonoBehaviour
         m_cells[i2.x, i2.y] = temp;
     }
 
+    private void SpawnRooms()
+    {
+        for (int i = 0; i < m_cells.GetLength(0) * m_cells.GetLength(1); i++)
+        {
+            Room instance = Instantiate(roomPrefab, roomParent);
+            rooms.Add(instance);
+        }
+
+        for (int i = 0; i < rooms.Count; i++)
+        {
+            if(i == rooms.Count - 1)
+            {
+                rooms[i].id = i;
+                break;
+            }
+
+            rooms[i].id = i;
+            rooms[i].SpawnCharacter();
+        }
+    }
+
     private bool CheckNeighbors()
     {
         bool isWin = true;
 
-        for (int y = 0; y < m_cells.GetLength(0); y++)
-        {
-            for (int x = 0; x < m_cells.GetLength(1); x++)
-            {
-                m_cells[x, y].room.roomRenderer.material.color = Color.gray;
-            }
-        }
+        //for (int y = 0; y < m_cells.GetLength(0); y++)
+        //{
+        //    for (int x = 0; x < m_cells.GetLength(1); x++)
+        //    {
+        //        m_cells[x, y].room.roomRenderer.material.color = Color.gray;
+        //    }
+        //}
 
         for (int y = 0; y < m_cells.GetLength(0); y++)
         {
             for (int x = 0; x < m_cells.GetLength(1); x++)
             {
-                if (m_cells[x, y].room.type == Room.RoomType.None) continue;
+                if (m_cells[x, y].room.IsEmpty) continue;
 
                 if (x > 0)
                 {
                     Cell leftNeighbor = m_cells[x - 1, y];
 
-                    if (leftNeighbor.room.type == m_cells[x, y].room.type)
+                    if (!leftNeighbor.room.IsEmpty && leftNeighbor.room.character.type == m_cells[x, y].room.character.type)
                     {
-                        leftNeighbor.room.roomRenderer.material.color = Color.red;
-                        m_cells[x, y].room.roomRenderer.material.color = Color.red;
+                        //leftNeighbor.room.roomRenderer.material.color = Color.red;
+                        //m_cells[x, y].room.roomRenderer.material.color = Color.red;
                         isWin = false;
                     }
                 }
@@ -283,10 +315,10 @@ public class LevelController : MonoBehaviour
                 {
                     Cell rightNeighbor = m_cells[x + 1, y];
 
-                    if (rightNeighbor.room.type == m_cells[x, y].room.type)
+                    if (!rightNeighbor.room.IsEmpty && rightNeighbor.room.character.type == m_cells[x, y].room.character.type)
                     {
-                        rightNeighbor.room.roomRenderer.material.color = Color.red;
-                        m_cells[x, y].room.roomRenderer.material.color = Color.red;
+                        //rightNeighbor.room.roomRenderer.material.color = Color.red;
+                        //m_cells[x, y].room.roomRenderer.material.color = Color.red;
                         isWin = false;
                     }
                 }
@@ -295,10 +327,10 @@ public class LevelController : MonoBehaviour
                 {
                     Cell upNeighbor = m_cells[x, y - 1];
 
-                    if(upNeighbor.room.type == m_cells[x,y].room.type)
+                    if(!upNeighbor.room.IsEmpty && upNeighbor.room.character.type == m_cells[x,y].room.character.type)
                     {
-                        upNeighbor.room.roomRenderer.material.color = Color.red;
-                        m_cells[x, y].room.roomRenderer.material.color = Color.red;
+                        //upNeighbor.room.roomRenderer.material.color = Color.red;
+                        //m_cells[x, y].room.roomRenderer.material.color = Color.red;
                         isWin = false;
                     }
                 }
@@ -307,10 +339,10 @@ public class LevelController : MonoBehaviour
                 {
                     Cell downNeighbor = m_cells[x, y + 1];
 
-                    if(downNeighbor.room.type == m_cells[x,y].room.type)
+                    if(!downNeighbor.room.IsEmpty && downNeighbor.room.character.type == m_cells[x,y].room.character.type)
                     {
-                        downNeighbor.room.roomRenderer.material.color = Color.red;
-                        m_cells[x, y].room.roomRenderer.material.color = Color.red;
+                        //downNeighbor.room.roomRenderer.material.color = Color.red;
+                        //m_cells[x, y].room.roomRenderer.material.color = Color.red;
                         isWin = false;
                     }
                 }

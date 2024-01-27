@@ -5,13 +5,14 @@ using TMPro;
 
 public class Room : MonoBehaviour
 {
-    public enum RoomType { None, Circle, Triangle }
-
-    public RoomType type;
     public int id;
 
     public Renderer roomRenderer;
     public Collider roomCollider;
+
+    public CharacterData characterData;
+    public Transform characterSpawnLocation;
+    public Character character;
 
     public TextMeshPro debugText;
     public GameObject debugQuad;
@@ -22,17 +23,29 @@ public class Room : MonoBehaviour
 
     private bool m_inAnimation;
 
+    public bool IsEmpty { get { return character == null; } }
+
     private void Start()
     {
-        debugText.text = id.ToString();
-        debugQuad.SetActive(type == RoomType.Triangle);
+        //debugText.text = id.ToString();
+        //debugQuad.SetActive(type == RoomType.Triangle);
+    }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.blue;
+
+        if(characterSpawnLocation != null)
+        {
+            Gizmos.DrawSphere(characterSpawnLocation.position, 0.05f);
+        }
     }
 
     public void ToggleInteractable(bool isInteractable)
     {
         roomRenderer.enabled = isInteractable;
         roomCollider.enabled = isInteractable;
-        debugText.enabled = isInteractable;
+        //debugText.enabled = isInteractable;
     }
 
     private void Update()
@@ -54,5 +67,15 @@ public class Room : MonoBehaviour
         m_targetPosition = targetPosition;
         m_timer = m_moveTime;
         m_inAnimation = true;
+    }
+
+    public void SpawnCharacter()
+    {
+        CharacterData.CharacterPrefab prefabData = characterData.GetCharacterForRoomID(id);
+        var instance = Instantiate(prefabData.prefab, transform);
+        character = instance;
+
+        character.transform.position = characterSpawnLocation.position;
+        character.transform.rotation = characterSpawnLocation.rotation;
     }
 }

@@ -27,6 +27,8 @@ public class LevelController : MonoBehaviour
     [SerializeField] private Room m_selectedRoom;
     [SerializeField] private Bounds m_homeBounds;
 
+    private bool m_isWin;
+
     private Vector3 m_startDragPosition;
 
     private Cell[,] m_cells;
@@ -90,6 +92,8 @@ public class LevelController : MonoBehaviour
 
     private void Update()
     {
+        if (m_isWin) return;
+
         if (Input.GetMouseButtonDown(0))
         {
             Room hitRoom = CheckRoomHit();
@@ -175,9 +179,23 @@ public class LevelController : MonoBehaviour
                         m_cells[roomIndex.x, roomIndex.y].room.SetTargetPosition(GetCellPosition(roomIndex.x, roomIndex.y));
                     }
 
-                    if (CheckNeighbors())
+                    if (CheckWin())
                     {
-                        winLabel.gameObject.SetActive(true);
+                        //winLabel.gameObject.SetActive(true);
+
+                        m_isWin = true;
+
+                        foreach (var room in rooms)
+                        {
+                            if (!room.IsEmpty)
+                            {
+                                room.character.SetWin();
+                            }
+                        }
+
+                        CheckNeighbors(m_selectedRoom);
+
+                        StartCoroutine(ResetWinState());
                     }
                 }
 
@@ -190,9 +208,21 @@ public class LevelController : MonoBehaviour
             winLabel.gameObject.SetActive(false);
             Swap(new Vector2Int(Random.Range(0, 3), Random.Range(0, 3)), new Vector2Int(Random.Range(0, 3), Random.Range(0, 3)), true);
 
-            if(CheckNeighbors())
+            if(CheckWin())
             {
-                winLabel.gameObject.SetActive(true);
+                //winLabel.gameObject.SetActive(true);
+
+                m_isWin = true;
+
+                foreach (var room in rooms)
+                {
+                    if(!room.IsEmpty)
+                    {
+                        room.character.SetWin();
+                    }
+                }
+
+                StartCoroutine(ResetWinState());
             }
         }
     }
@@ -265,6 +295,7 @@ public class LevelController : MonoBehaviour
         for (int i = 0; i < m_cells.GetLength(0) * m_cells.GetLength(1); i++)
         {
             Room instance = Instantiate(roomPrefab, roomParent);
+            instance.name = "Room " + i;
             rooms.Add(instance);
         }
 
@@ -278,10 +309,61 @@ public class LevelController : MonoBehaviour
 
             rooms[i].id = i;
             rooms[i].SpawnCharacter();
+            rooms[i].character.characterId = i;
         }
     }
 
-    private bool CheckNeighbors()
+    private void CheckNeighbors(Room room)
+    {
+        Vector2Int roomIndex = new Vector2Int();
+
+        if(GetRoomIndex(room, ref roomIndex))
+        {
+            if (m_cells[roomIndex.x, roomIndex.y].room.IsEmpty) Debug.LogError("Don't check the empty room pls");
+
+            if(roomIndex.x > 0)
+            {
+                Cell leftNeighbor = m_cells[roomIndex.x - 1, roomIndex.y];
+
+                if (!leftNeighbor.room.IsEmpty && leftNeighbor.room.character.type == m_cells[roomIndex.x, roomIndex.y].room.character.type)
+                {
+                    Debug.Log("Left is bad");
+                }
+            }
+
+            if(roomIndex.x < m_cells.GetLength(1) - 1)
+            {
+                Cell rightNeighbor = m_cells[roomIndex.x + 1, roomIndex.y];
+
+                if (!rightNeighbor.room.IsEmpty && rightNeighbor.room.character.type == m_cells[roomIndex.x, roomIndex.y].room.character.type)
+                {
+                    Debug.Log("Right is bad");
+                }
+            }
+
+            if(roomIndex.y > 0)
+            {
+                Cell upNeighbor = m_cells[roomIndex.x, roomIndex.y - 1];
+
+                if (!upNeighbor.room.IsEmpty && upNeighbor.room.character.type == m_cells[roomIndex.x, roomIndex.y].room.character.type)
+                {
+                    Debug.Log("Up is bad");
+                }
+            }
+
+            if(roomIndex.y < m_cells.GetLength(0) - 1)
+            {
+                Cell downNeighbor = m_cells[roomIndex.x, roomIndex.y + 1];
+
+                if (!downNeighbor.room.IsEmpty && downNeighbor.room.character.type == m_cells[roomIndex.x, roomIndex.y].room.character.type)
+                {
+                    Debug.Log("Down is bad");
+                }
+            }
+        }
+    }
+
+    private bool CheckWin()
     {
         bool isWin = true;
 
@@ -361,7 +443,7 @@ public class LevelController : MonoBehaviour
             yield return null;
         }
 
-        CheckNeighbors();
+        CheckWin();
     }
 
     private Room CheckRoomHit()
@@ -413,5 +495,22 @@ public class LevelController : MonoBehaviour
     private Vector3 GetCellPosition(int x, int y)
     {
         return new Vector3(x, y) + new Vector3(margin * x, margin * y) + m_parentOffset;
+    }
+
+    private IEnumerator ResetWinState()
+    {
+        const float resetWinDelay = 5f;
+        yield return new WaitForSeconds(resetWinDelay);
+        m_isWin = false;
+
+        foreach (var room in rooms)
+        {
+            if (!room.IsEmpty)
+            {
+                room.character.ResetWin();
+            }
+        }
+
+        StartCoroutine(RandomizeRooms());
     }
 }

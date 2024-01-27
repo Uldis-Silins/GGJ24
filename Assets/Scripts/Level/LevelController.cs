@@ -25,7 +25,11 @@ public class LevelController : MonoBehaviour
     [SerializeField] private Room m_selectedRoom;
     [SerializeField] private Bounds m_homeBounds;
 
+    private Vector3 m_startDragPosition;
+
     private Cell[,] m_cells;
+
+    private Vector3 m_parentOffset = Vector3.one * 0.5f;
 
     private void OnValidate()
     {
@@ -42,7 +46,6 @@ public class LevelController : MonoBehaviour
     {
         mainCamera.orthographic = true;
 
-        Vector3 parentOffset = Vector3.one * 0.5f;
         m_cells = new Cell[3,3];
 
         for (int y = 0; y < m_cells.GetLength(0); y++)
@@ -60,7 +63,7 @@ public class LevelController : MonoBehaviour
 
                 //rooms[index].GetComponent<Renderer>().material.color = c;
 
-                rooms[index].transform.position = new Vector3(x, y) + new Vector3(margin * x, margin * y) + parentOffset;
+                rooms[index].transform.position = new Vector3(x, y) + new Vector3(margin * x, margin * y) + m_parentOffset;
             }
         }
 
@@ -68,7 +71,7 @@ public class LevelController : MonoBehaviour
 
         if (m_homeBounds != null)
         {
-            FocusOn(mainCamera, parentOffset, m_homeBounds, margin);
+            FocusOn(mainCamera, m_parentOffset, m_homeBounds, margin);
         }
 
         StartCoroutine(RandomizeRooms());
@@ -77,22 +80,51 @@ public class LevelController : MonoBehaviour
 
     private void Update()
     {
-        if(Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(0))
         {
             Room hitRoom = CheckRoomHit();
 
             if (hitRoom != null)
             {
                 m_selectedRoom = hitRoom;
+                m_startDragPosition = Input.mousePosition;
             }
         }
         else if(Input.GetMouseButton(0))
         {
             if(m_selectedRoom != null)
             {
+                Vector3 dir = (Input.mousePosition - m_startDragPosition).normalized;
+                Debug.Log(Mathf.RoundToInt(dir.x) + ": " + Mathf.RoundToInt(dir.y));
+
                 Vector3 mouseWorldPos = mainCamera.ScreenToWorldPoint(Input.mousePosition);
-                Vector3 targetPos = mouseWorldPos;
-                targetPos.z = m_selectedRoom.transform.position.z;
+                Vector3 targetPos = m_selectedRoom.transform.position;
+                mouseWorldPos.z = m_selectedRoom.transform.position.z;
+
+                Vector2Int roomIndex = new Vector2Int();
+                if (GetRoomIndex(m_selectedRoom, ref roomIndex))
+                {
+                    Vector2Int targetIndex = roomIndex + new Vector2Int(Mathf.RoundToInt(dir.x), 0);
+
+                    targetIndex.Clamp(Vector2Int.zero, new Vector2Int(m_cells.GetLength(0) - 1, m_cells.GetLength(1) - 1));
+
+                    if (m_cells[targetIndex.x, targetIndex.y].room.type == Room.RoomType.None)
+                    {
+                        targetPos.x = mouseWorldPos.x;
+                        targetPos.y = m_selectedRoom.transform.position.y;
+                    }
+
+                    targetIndex = roomIndex + new Vector2Int(0, Mathf.RoundToInt(dir.y));
+
+                    targetIndex.Clamp(Vector2Int.zero, new Vector2Int(m_cells.GetLength(0) - 1, m_cells.GetLength(1) - 1));
+
+                    if (m_cells[targetIndex.x, targetIndex.y].room.type == Room.RoomType.None)
+                    {
+                        targetPos.y = mouseWorldPos.y;
+                        targetPos.x = m_selectedRoom.transform.position.x;
+                    }
+                }
+
                 m_selectedRoom.transform.position = targetPos;
             }
         }
@@ -101,6 +133,44 @@ public class LevelController : MonoBehaviour
         {
             if(m_selectedRoom != null)
             {
+                Vector3 dir = (Input.mousePosition - m_startDragPosition);
+
+                Vector2Int checkDirection = new Vector2Int();
+
+                if (Mathf.Abs(dir.x) > Mathf.Abs(dir.y))
+                {
+                    checkDirection.x = dir.x > 0 ? 1 : -1;
+                }
+                else
+                {
+                    checkDirection.y = dir.y > 0 ? 1 : -1;
+                }
+
+                Debug.Log(checkDirection);
+
+                Vector2Int roomIndex = new Vector2Int();
+                if (GetRoomIndex(m_selectedRoom, ref roomIndex))
+                {
+                    Vector2Int targetIndex = roomIndex + checkDirection;
+                    Debug.Log("Swapping " + roomIndex + " with " + targetIndex);
+
+                    targetIndex.Clamp(Vector2Int.zero, new Vector2Int(m_cells.GetLength(0) - 1, m_cells.GetLength(1) - 1));
+
+                    if (m_cells[targetIndex.x, targetIndex.y].room.type == Room.RoomType.None)
+                    {
+                        Swap(roomIndex, targetIndex, true);
+                    }
+                    else
+                    {
+                        m_cells[roomIndex.x, roomIndex.y].room.SetTargetPosition(GetCellPosition(roomIndex.x, roomIndex.y));
+                    }
+
+                    if (CheckNeighbors())
+                    {
+                        winLabel.gameObject.SetActive(true);
+                    }
+                }
+
                 m_selectedRoom = null;
             }
         }
@@ -124,8 +194,6 @@ public class LevelController : MonoBehaviour
         {
             Gizmos.DrawWireCube(m_homeBounds.center, m_homeBounds.size);
         }
-
-        Gizmos.color = Color.yellow;
     }
 
     private Bounds GetBounds()
@@ -166,8 +234,8 @@ public class LevelController : MonoBehaviour
     {
         if (animate)
         {
-            m_cells[i1.x, i1.y].room.SetTargetPosition(m_cells[i2.x, i2.y].room.transform.position);
-            m_cells[i2.x, i2.y].room.SetTargetPosition(m_cells[i1.x, i1.y].room.transform.position);
+            m_cells[i1.x, i1.y].room.SetTargetPosition(GetCellPosition(i2.x, i2.y));
+            m_cells[i2.x, i2.y].room.SetTargetPosition(GetCellPosition(i1.x, i1.y));
         }
         else
         {
@@ -273,5 +341,45 @@ public class LevelController : MonoBehaviour
         }
 
         return null;
+    }
+
+    private bool IsInsideBounds(Vector3 pos)
+    {
+        Vector3 margins = new Vector3(margin * (m_cells.GetLength(0)), margin * (m_cells.GetLength(1)));
+        Vector3 size = new Vector3(m_cells.GetLength(0) - 1, m_cells.GetLength(1) - 1) + margins;
+
+        Rect rect = new Rect(Vector3.zero, size);
+
+        return rect.Contains(pos);
+    }
+
+    private Vector2Int GetCellIndex(Vector3 pos)
+    {
+        Vector3 margins = new Vector3(margin * (m_cells.GetLength(0)), margin * (m_cells.GetLength(1)));
+        Vector3 size = new Vector3(m_cells.GetLength(0), m_cells.GetLength(1));
+        
+        return new Vector2Int(Mathf.FloorToInt((pos.x / size.x) * size.x), Mathf.FloorToInt((pos.y / size.y) * size.y));
+    }
+
+    private bool GetRoomIndex(Room room, ref Vector2Int index)
+    {
+        for (int y = 0; y < m_cells.GetLength(0); y++)
+        {
+            for (int x = 0; x < m_cells.GetLength(1); x++)
+            {
+                if (m_cells[x,y].room.id == room.id)
+                {
+                    index = new Vector2Int(x, y);
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private Vector3 GetCellPosition(int x, int y)
+    {
+        return new Vector3(x, y) + new Vector3(margin * x, margin * y) + m_parentOffset;
     }
 }

@@ -20,6 +20,8 @@ public class Room : MonoBehaviour
     private float m_timer;
     private float m_moveTime = 0.5f;
 
+    private bool m_inAnimation;
+
     private void Start()
     {
         debugText.text = id.ToString();
@@ -35,10 +37,15 @@ public class Room : MonoBehaviour
 
     private void Update()
     {
-        if(m_timer > 0f)
+        if(m_inAnimation)
         {
             transform.position = Vector3.Lerp(transform.position, m_targetPosition, 1f - (m_timer / m_moveTime));
             m_timer -= Time.deltaTime;
+
+            if(m_timer < 0f)
+            {
+                m_inAnimation = false;
+            }
         }
     }
 
@@ -46,5 +53,6 @@ public class Room : MonoBehaviour
     {
         m_targetPosition = targetPosition;
         m_timer = m_moveTime;
+        m_inAnimation = true;
     }
 }

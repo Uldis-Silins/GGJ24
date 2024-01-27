@@ -257,7 +257,7 @@ public class LevelController : MonoBehaviour
         {
             for (int x = 0; x < m_cells.GetLength(1); x++)
             {
-                m_cells[x, y].room.roomRenderer.material.color = Color.white;
+                m_cells[x, y].room.roomRenderer.material.color = Color.gray;
             }
         }
 

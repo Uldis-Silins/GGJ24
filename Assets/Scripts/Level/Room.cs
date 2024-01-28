@@ -133,4 +133,19 @@ public class Room : MonoBehaviour
 
         character.StartAttackSequence(targetRoom.character, targetRoom.character.transform.position + targetDir, 1f);
     }
+
+    public void PlayDanceSequence()
+    {
+        StartCoroutine(PlayDanceAfterAnimation());
+    }
+
+    private IEnumerator PlayDanceAfterAnimation()
+    {
+        while (InAnimation)
+        {
+            yield return null;
+        }
+
+        character.StartDanceSequence();
+    }
 }

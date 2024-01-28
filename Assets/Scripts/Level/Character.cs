@@ -13,7 +13,7 @@ public class Character : MonoBehaviour
     }
 
     public enum CharacterTeamType { None, Light, Dark }
-    public enum StateType { None, Idle, Attack, Move }
+    public enum StateType { None, Idle, Attack, Move, Dance }
 
     private delegate void StateHandler();
 
@@ -39,12 +39,17 @@ public class Character : MonoBehaviour
 
     private float m_attackTimer;
     private float m_moveTimer;
+    private float m_danceTimer;
 
     private Vector3 m_fromMovePos;
     private Vector3 m_moveTarget;
     private bool m_checkGrounded;
 
+    private float m_danceRotateDirection;
+
     private AttackSequence m_attackSequence;
+
+    private Renderer[] m_renderers;
 
     private readonly int m_idleAnimationHash = Animator.StringToHash("Idle");
     private readonly int m_winAnimationHash = Animator.StringToHash("Win");
@@ -60,13 +65,16 @@ public class Character : MonoBehaviour
             { StateType.None, () => { throw new System.Exception("Cannot be state None"); } },
             { StateType.Idle, EnterState_Idle },
             { StateType.Attack, EnterState_Attack },
-            { StateType.Move, EnterState_Move }
+            { StateType.Move, EnterState_Move },
+            { StateType.Dance, EnterState_Dance }
         };
 
         m_currentState = StateType.Idle;
         m_stateHandler = EnterState_Idle;
 
         m_stateQueue = new Queue<StateType>();
+
+        m_renderers = GetComponentsInChildren<Renderer>();
     }
 
     private void Start()
@@ -229,6 +237,31 @@ public class Character : MonoBehaviour
         characterAnimator.SetBool("Move", false);
         m_stateHandler = targetState;
     }
+
+    private void EnterState_Dance()
+    {
+        characterAnimator.SetBool("Dance", true);
+        m_stateHandler = State_Dance;
+    }
+
+    private void State_Dance()
+    {
+        transform.Rotate(Vector3.up * Random.Range(5f, 20f) * m_danceRotateDirection * Time.deltaTime);
+
+        if(m_danceTimer <= 0f)
+        {
+            ExitState_Dance(GetNextState());
+        }
+
+        m_danceTimer -= Time.deltaTime;
+    }
+
+    private void ExitState_Dance(StateHandler targetState)
+    {
+        transform.rotation = idlePoint.rotation;
+        characterAnimator.SetBool("Dance", false);
+        m_stateHandler = targetState;
+    }
     #endregion  // ~States
 
     private void SetMoveTarget(Vector3 position)
@@ -245,6 +278,13 @@ public class Character : MonoBehaviour
         SetMoveTarget(pos);
         AddStateToQueue(StateType.Move);
         AddStateToQueue(StateType.Attack);
+    }
+
+    public void StartDanceSequence()
+    {
+        m_danceTimer = 2f;
+        m_danceRotateDirection = Mathf.RoundToInt(Random.Range(-1f, 1f));
+        AddStateToQueue(StateType.Dance);
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -282,11 +322,11 @@ public class Character : MonoBehaviour
         m_checkGrounded = true;
     }
 
-    public void SpawnRagdoll(Vector3 forcePosition)
+    public void SpawnRagdoll(Vector3 forcePosition, float forceMultiplier = 1f)
     {
         ragdoll.SetActive(true);
         meshObject.SetActive(false);
-        CopyTransformTree(meshObject.transform, ragdoll.transform, forcePosition);
+        CopyTransformTree(meshObject.transform, ragdoll.transform, forcePosition, forceMultiplier);
         m_ragdollSpawned = true;
     }
 
@@ -304,7 +344,7 @@ public class Character : MonoBehaviour
         characterAnimator.SetFloat(m_idleAnimationHash, characterId);
     }
 
-    private void CopyTransformTree(Transform sourceRoot, Transform destRoot, Vector3 forcePosition)
+    private void CopyTransformTree(Transform sourceRoot, Transform destRoot, Vector3 forcePosition, float forceMultiplier)
     {
         if (!m_ragdollSpawned)
         {
@@ -317,14 +357,64 @@ public class Character : MonoBehaviour
         if (rb != null)
         {
             rb.isKinematic = false;
-            rb.AddExplosionForce(Random.Range(3f, 7f), forcePosition - Vector3.up * Random.Range(0f, 0.5f), 1f);
+            rb.AddExplosionForce(Random.Range(3f, 7f) * forceMultiplier, forcePosition - Vector3.up * Random.Range(0f, 0.5f), 1f);
         }
 
         int limit = Mathf.Min(sourceRoot.childCount, destRoot.childCount);
 
         for (int i = 0; i < limit; i++)
         {
-            CopyTransformTree(sourceRoot.GetChild(i), destRoot.GetChild(i), forcePosition);
+            CopyTransformTree(sourceRoot.GetChild(i), destRoot.GetChild(i), forcePosition, forceMultiplier);
+        }
+    }
+
+    public void Freeze()
+    {
+        StartCoroutine(AnimateFreeze());
+    }
+
+    private IEnumerator AnimateFreeze()
+    {
+        float t = 0.35f;
+
+        while (t >= 0)
+        {
+            foreach (var r in m_renderers)
+            {
+                foreach (var mat in r.materials)
+                {
+                    mat.SetFloat("_Saturation", t / 0.35f);
+                }
+            }
+
+            characterAnimator.speed = t / 0.35f;
+            t -= Time.deltaTime;
+            yield return null;
+        }
+    }
+
+    public void Unfreeze()
+    {
+        StartCoroutine(AnimateUnfreeze());
+    }
+
+    private IEnumerator AnimateUnfreeze()
+    {
+        float t = 0f;
+
+        while (t <= 0.35f)
+        {
+            foreach (var r in m_renderers)
+            {
+                foreach (var mat in r.materials)
+                {
+                    mat.SetFloat("_Saturation", t / 0.35f);
+                }
+            }
+
+            characterAnimator.speed = t / 0.35f;
+            t += Time.deltaTime;
+            yield return null;
         }
     }
 

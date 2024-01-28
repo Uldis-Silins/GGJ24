@@ -7,7 +7,8 @@ public class Character : MonoBehaviour
 {
     public struct AttackSequence
     {
-        public Vector3 targetPosition;
+        public Character target;
+        public Vector3 attackPosition;
         public float attackTime;
     }
 
@@ -21,9 +22,12 @@ public class Character : MonoBehaviour
     public CharacterTeamType type;
     public int characterId;
 
+    public GameObject ragdoll;
+
     [SerializeField] private bool m_drawGizmos;
 
     private Rigidbody m_rigidbody;
+    private bool m_ragdollSpawned;
 
     private StateHandler m_stateHandler;
     private StateType m_currentState;
@@ -159,7 +163,7 @@ public class Character : MonoBehaviour
 
     private void State_Attack()
     {
-        Vector3 dir = (m_attackSequence.targetPosition - transform.position).normalized;
+        Vector3 dir = (m_attackSequence.target.transform.position - transform.position).normalized;
         dir.y = 0;
         dir.z = 0;
         transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(dir), 15f * Time.deltaTime);
@@ -169,7 +173,12 @@ public class Character : MonoBehaviour
             ExitState_Attack(m_states[m_currentState]);
         }
 
-        transform.position = m_attackSequence.targetPosition;
+        //transform.position = m_attackSequence.targetPosition;
+
+        if(m_attackTimer <= 0.5f)
+        {
+            m_attackSequence.target.SpawnRagdoll(transform.position);
+        }
 
         if (m_attackTimer <= 0f)
         {
@@ -181,27 +190,13 @@ public class Character : MonoBehaviour
 
     private void ExitState_Attack(StateHandler targetState)
     {
+        m_attackSequence.target.DespawnRagdoll();
         characterAnimator.ResetTrigger("Attack");
         m_stateHandler = targetState;
     }
 
     private void EnterState_Move()
     {
-        Vector3 targetDir = (transform.position - m_moveTarget).normalized;
-        targetDir.y = 0f;
-
-        if (targetDir.x < 1f)
-        {
-            targetDir.z = 0.5f;
-
-            if(targetDir.y < 0f)
-            {
-                targetDir.z = -targetDir.z;
-            }
-        }
-
-        m_moveTarget += targetDir * 0.3f;
-
         characterAnimator.SetBool("Move", true);
         m_stateHandler = State_Move;
     }
@@ -213,9 +208,12 @@ public class Character : MonoBehaviour
         characterAnimator.SetFloat("y", moveDir.y);
         Vector3 lookDir = moveDir;
         lookDir.y = lookDir.z = 0f;
-        Quaternion lookRot = Quaternion.LookRotation(lookDir);
-        transform.rotation = Quaternion.Slerp(transform.rotation, lookRot, 10f * Time.deltaTime);
-        //m_rigidbody.MovePosition(transform.position + moveDir * 5f * Time.deltaTime);
+        if (Mathf.Abs(lookDir.x) > 0)
+        {
+            Quaternion lookRot = Quaternion.LookRotation(lookDir);
+            transform.rotation = Quaternion.Slerp(transform.rotation, lookRot, 10f * Time.deltaTime);
+        }
+
         transform.position = Vector3.Lerp(m_fromMovePos, m_moveTarget, m_moveTimer / 1f);
 
         if (m_moveTimer >= 1f)
@@ -240,11 +238,11 @@ public class Character : MonoBehaviour
         m_moveTarget = position;
     }
 
-    public void StartAttackSequence(Vector3 targetPosition, float attackTime)
+    public void StartAttackSequence(Character target, Vector3 pos, float attackTime)
     {
-        m_attackSequence = new AttackSequence() { targetPosition = targetPosition, attackTime = attackTime };
+        m_attackSequence = new AttackSequence() { target = target, attackPosition = pos, attackTime = attackTime };
         m_attackTimer = attackTime;
-        SetMoveTarget(m_attackSequence.targetPosition);
+        SetMoveTarget(pos);
         AddStateToQueue(StateType.Move);
         AddStateToQueue(StateType.Attack);
     }
@@ -283,4 +281,51 @@ public class Character : MonoBehaviour
         m_rigidbody.useGravity = true;
         m_checkGrounded = true;
     }
+
+    public void SpawnRagdoll(Vector3 forcePosition)
+    {
+        ragdoll.SetActive(true);
+        meshObject.SetActive(false);
+        CopyTransformTree(meshObject.transform, ragdoll.transform, forcePosition);
+        m_ragdollSpawned = true;
+    }
+
+    public void DespawnRagdoll()
+    {
+        StartCoroutine(DespawnRagdollDelayed(1f));
+    }
+
+    private IEnumerator DespawnRagdollDelayed(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        ragdoll.SetActive(false);
+        meshObject.SetActive(true);
+        m_ragdollSpawned = false;
+        characterAnimator.SetFloat(m_idleAnimationHash, characterId);
+    }
+
+    private void CopyTransformTree(Transform sourceRoot, Transform destRoot, Vector3 forcePosition)
+    {
+        if (!m_ragdollSpawned)
+        {
+            sourceRoot.GetLocalPositionAndRotation(out var localPos, out var localRot);
+            destRoot.SetLocalPositionAndRotation(localPos, localRot);
+        }
+
+        Rigidbody rb = destRoot.GetComponent<Rigidbody>();
+
+        if (rb != null)
+        {
+            rb.isKinematic = false;
+            rb.AddExplosionForce(Random.Range(3f, 7f), forcePosition - Vector3.up * Random.Range(0f, 0.5f), 1f);
+        }
+
+        int limit = Mathf.Min(sourceRoot.childCount, destRoot.childCount);
+
+        for (int i = 0; i < limit; i++)
+        {
+            CopyTransformTree(sourceRoot.GetChild(i), destRoot.GetChild(i), forcePosition);
+        }
+    }
+
 }

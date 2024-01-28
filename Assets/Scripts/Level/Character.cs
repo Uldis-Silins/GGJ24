@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.TextCore.Text;
 
 public class Character : MonoBehaviour
 {
@@ -161,7 +162,7 @@ public class Character : MonoBehaviour
         Vector3 dir = (m_attackSequence.targetPosition - transform.position).normalized;
         dir.y = 0;
         dir.z = 0;
-        transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(dir), 5f * Time.deltaTime);
+        transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(dir), 15f * Time.deltaTime);
 
         if (m_currentState != StateType.Attack)
         {
@@ -186,6 +187,21 @@ public class Character : MonoBehaviour
 
     private void EnterState_Move()
     {
+        Vector3 targetDir = (transform.position - m_moveTarget).normalized;
+        targetDir.y = 0f;
+
+        if (targetDir.x < 1f)
+        {
+            targetDir.z = 0.5f;
+
+            if(targetDir.y < 0f)
+            {
+                targetDir.z = -targetDir.z;
+            }
+        }
+
+        m_moveTarget += targetDir * 0.3f;
+
         characterAnimator.SetBool("Move", true);
         m_stateHandler = State_Move;
     }

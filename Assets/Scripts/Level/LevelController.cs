@@ -261,12 +261,14 @@ public class LevelController : MonoBehaviour
     {
         float w = bounds.size.x + margin;
         float h = bounds.size.y + margin;
-        float x = offset.x + w * 0.5f - margin * 3;
-        float y = offset.y + h * 0.5f - margin * 3;
+        //float x = offset.x + w * 0.5f - margin * 3;
+        //float y = offset.y + h * 0.5f - margin * 3;
 
-        camera.transform.position = new Vector3(x, y, -10f);
+        //camera.transform.position = new Vector3(x, y, -10f);
+        camera.transform.position += Vector3.right * (offset.x + w * 0.5f - margin * 3);
 
         camera.orthographicSize = ((w > h * camera.aspect) ? (float)w / (float)camera.pixelWidth * camera.pixelHeight : h) / 2;
+        camera.orthographicSize += margin;
     }
 
     private void Swap(Vector2Int i1, Vector2Int i2, bool animate)

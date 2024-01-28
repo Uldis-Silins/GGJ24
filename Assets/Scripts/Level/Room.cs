@@ -113,9 +113,6 @@ public class Room : MonoBehaviour
             yield return null;
         }
 
-        Vector3 targetDir = (character.transform.position - targetRoom.character.transform.position).normalized;
-        targetDir.y = 0f;
-        targetDir.z = -0.3f;
-        character.StartAttackSequence(targetRoom.character.transform.position + targetDir * 0.3f, 1f);
+        character.StartAttackSequence(targetRoom.character.transform.position, 1f);
     }
 }

@@ -13,6 +13,7 @@ public class Room : MonoBehaviour
     public CharacterData characterData;
     public Transform characterSpawnLocation;
     public Character character;
+    public Transform idlePoint;
 
     public TextMeshPro debugText;
     public GameObject debugQuad;
@@ -21,9 +22,12 @@ public class Room : MonoBehaviour
     private float m_timer;
     private float m_moveTime = 0.5f;
 
-    private bool m_inAnimation;
+    private float m_lockTimer = 2f;
 
     public bool IsEmpty { get { return character == null; } }
+    public bool CanMove { get { return !IsLocked && (character != null && !character.IsBusy); } }
+    public bool InAnimation { get; private set; }
+    public bool IsLocked { get; private set; }
 
     private void Start()
     {
@@ -50,15 +54,25 @@ public class Room : MonoBehaviour
 
     private void Update()
     {
-        if(m_inAnimation)
+        if(InAnimation)
         {
             transform.position = Vector3.Lerp(transform.position, m_targetPosition, 1f - (m_timer / m_moveTime));
             m_timer -= Time.deltaTime;
 
             if(m_timer < 0f)
             {
-                m_inAnimation = false;
+                InAnimation = false;
             }
+        }
+
+        if(IsLocked)
+        {
+            if(m_lockTimer < 0f)
+            {
+                IsLocked = false;
+            }
+
+            m_lockTimer -= Time.deltaTime;
         }
     }
 
@@ -66,7 +80,13 @@ public class Room : MonoBehaviour
     {
         m_targetPosition = targetPosition;
         m_timer = m_moveTime;
-        m_inAnimation = true;
+        InAnimation = true;
+    }
+
+    public void SetLocked(float lockTime = 2f)
+    {
+        m_lockTimer = lockTime;
+        IsLocked = true;
     }
 
     public void SpawnCharacter()
@@ -77,5 +97,25 @@ public class Room : MonoBehaviour
 
         character.transform.position = characterSpawnLocation.position;
         character.transform.rotation = characterSpawnLocation.rotation;
+        character.idlePoint = idlePoint;
+    }
+
+    public void PlayAttackSequence(Room targetRoom)
+    {
+        StartCoroutine(PlayAttackAfterAnimation(targetRoom));
+        targetRoom.SetLocked();
+    }
+
+    private IEnumerator PlayAttackAfterAnimation(Room targetRoom)
+    {
+        while (InAnimation || targetRoom.InAnimation)
+        {
+            yield return null;
+        }
+
+        Vector3 targetDir = (character.transform.position - targetRoom.character.transform.position).normalized;
+        targetDir.y = 0f;
+        targetDir.z = -0.3f;
+        character.StartAttackSequence(targetRoom.character.transform.position + targetDir * 0.3f, 1f);
     }
 }

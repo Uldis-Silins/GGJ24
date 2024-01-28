@@ -87,7 +87,7 @@ public class LevelController : MonoBehaviour
             FocusOn(mainCamera, m_parentOffset, m_homeBounds, margin);
         }
 
-        StartCoroutine(RandomizeRooms());
+        //StartCoroutine(RandomizeRooms());
     }
 
     private void Update()
@@ -96,9 +96,11 @@ public class LevelController : MonoBehaviour
 
         if (Input.GetMouseButtonDown(0))
         {
+            if (!CanMove()) return;
+
             Room hitRoom = CheckRoomHit();
 
-            if (hitRoom != null)
+            if (hitRoom != null && hitRoom.CanMove)
             {
                 m_selectedRoom = hitRoom;
                 m_startDragPosition = Input.mousePosition;
@@ -109,7 +111,6 @@ public class LevelController : MonoBehaviour
             if(m_selectedRoom != null)
             {
                 Vector3 dir = (Input.mousePosition - m_startDragPosition).normalized;
-                Debug.Log(Mathf.RoundToInt(dir.x) + ": " + Mathf.RoundToInt(dir.y));
 
                 Vector3 mouseWorldPos = mainCamera.ScreenToWorldPoint(Input.mousePosition);
                 Vector3 targetPos = m_selectedRoom.transform.position;
@@ -160,13 +161,10 @@ public class LevelController : MonoBehaviour
                     checkDirection.y = dir.y > 0 ? 1 : -1;
                 }
 
-                Debug.Log(checkDirection);
-
                 Vector2Int roomIndex = new Vector2Int();
                 if (GetRoomIndex(m_selectedRoom, ref roomIndex))
                 {
                     Vector2Int targetIndex = roomIndex + checkDirection;
-                    Debug.Log("Swapping " + roomIndex + " with " + targetIndex);
 
                     targetIndex.Clamp(Vector2Int.zero, new Vector2Int(m_cells.GetLength(0) - 1, m_cells.GetLength(1) - 1));
 
@@ -178,6 +176,8 @@ public class LevelController : MonoBehaviour
                     {
                         m_cells[roomIndex.x, roomIndex.y].room.SetTargetPosition(GetCellPosition(roomIndex.x, roomIndex.y));
                     }
+
+                    CheckNeighbors(m_selectedRoom);
 
                     if (CheckWin())
                     {
@@ -192,8 +192,6 @@ public class LevelController : MonoBehaviour
                                 room.character.SetWin();
                             }
                         }
-
-                        CheckNeighbors(m_selectedRoom);
 
                         StartCoroutine(ResetWinState());
                     }
@@ -328,6 +326,7 @@ public class LevelController : MonoBehaviour
                 if (!leftNeighbor.room.IsEmpty && leftNeighbor.room.character.type == m_cells[roomIndex.x, roomIndex.y].room.character.type)
                 {
                     Debug.Log("Left is bad");
+                    leftNeighbor.room.PlayAttackSequence(m_selectedRoom);
                 }
             }
 
@@ -338,26 +337,29 @@ public class LevelController : MonoBehaviour
                 if (!rightNeighbor.room.IsEmpty && rightNeighbor.room.character.type == m_cells[roomIndex.x, roomIndex.y].room.character.type)
                 {
                     Debug.Log("Right is bad");
+                    rightNeighbor.room.PlayAttackSequence(m_selectedRoom);
                 }
             }
 
             if(roomIndex.y > 0)
             {
-                Cell upNeighbor = m_cells[roomIndex.x, roomIndex.y - 1];
+                Cell downNeighbor = m_cells[roomIndex.x, roomIndex.y - 1];
 
-                if (!upNeighbor.room.IsEmpty && upNeighbor.room.character.type == m_cells[roomIndex.x, roomIndex.y].room.character.type)
+                if (!downNeighbor.room.IsEmpty && downNeighbor.room.character.type == m_cells[roomIndex.x, roomIndex.y].room.character.type)
                 {
-                    Debug.Log("Up is bad");
+                    Debug.Log("Down is bad");
+                    downNeighbor.room.PlayAttackSequence(m_selectedRoom);
                 }
             }
 
             if(roomIndex.y < m_cells.GetLength(0) - 1)
             {
-                Cell downNeighbor = m_cells[roomIndex.x, roomIndex.y + 1];
+                Cell upNeighbor = m_cells[roomIndex.x, roomIndex.y + 1];
 
-                if (!downNeighbor.room.IsEmpty && downNeighbor.room.character.type == m_cells[roomIndex.x, roomIndex.y].room.character.type)
+                if (!upNeighbor.room.IsEmpty && upNeighbor.room.character.type == m_cells[roomIndex.x, roomIndex.y].room.character.type)
                 {
-                    Debug.Log("Down is bad");
+                    Debug.Log("Up is bad");
+                    upNeighbor.room.PlayAttackSequence(m_selectedRoom);
                 }
             }
         }
@@ -407,9 +409,9 @@ public class LevelController : MonoBehaviour
 
                 if (y > 0)
                 {
-                    Cell upNeighbor = m_cells[x, y - 1];
+                    Cell downNeighbor = m_cells[x, y - 1];
 
-                    if(!upNeighbor.room.IsEmpty && upNeighbor.room.character.type == m_cells[x,y].room.character.type)
+                    if(!downNeighbor.room.IsEmpty && downNeighbor.room.character.type == m_cells[x,y].room.character.type)
                     {
                         //upNeighbor.room.roomRenderer.material.color = Color.red;
                         //m_cells[x, y].room.roomRenderer.material.color = Color.red;
@@ -419,9 +421,9 @@ public class LevelController : MonoBehaviour
 
                 if(y < m_cells.GetLength(0) - 1)
                 {
-                    Cell downNeighbor = m_cells[x, y + 1];
+                    Cell upNeighbor = m_cells[x, y + 1];
 
-                    if(!downNeighbor.room.IsEmpty && downNeighbor.room.character.type == m_cells[x,y].room.character.type)
+                    if(!upNeighbor.room.IsEmpty && upNeighbor.room.character.type == m_cells[x,y].room.character.type)
                     {
                         //downNeighbor.room.roomRenderer.material.color = Color.red;
                         //m_cells[x, y].room.roomRenderer.material.color = Color.red;
@@ -434,6 +436,19 @@ public class LevelController : MonoBehaviour
         return isWin;
     }
 
+    private bool CanMove()
+    {
+        foreach (var room in rooms)
+        {
+            if(room.IsLocked)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private IEnumerator RandomizeRooms()
     {
         const int randomIterations = 5;
@@ -444,6 +459,14 @@ public class LevelController : MonoBehaviour
         }
 
         CheckWin();
+
+        foreach (var room in rooms)
+        {
+            if (!room.IsEmpty)
+            {
+                room.character.ResetPosition(room.characterSpawnLocation.position);
+            }
+        }
     }
 
     private Room CheckRoomHit()

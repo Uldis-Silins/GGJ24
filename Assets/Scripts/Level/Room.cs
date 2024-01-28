@@ -9,6 +9,7 @@ public class Room : MonoBehaviour
 
     public Renderer roomRenderer;
     public Collider roomCollider;
+    public Collider floorCollider;
 
     public CharacterData characterData;
     public Transform characterSpawnLocation;
@@ -49,6 +50,8 @@ public class Room : MonoBehaviour
     {
         roomRenderer.enabled = isInteractable;
         roomCollider.enabled = isInteractable;
+
+        if (!isInteractable) floorCollider.enabled = false;
         //debugText.enabled = isInteractable;
     }
 
@@ -113,6 +116,21 @@ public class Room : MonoBehaviour
             yield return null;
         }
 
-        character.StartAttackSequence(targetRoom.character.transform.position, 1f);
+        Vector3 targetDir = (transform.position - targetRoom.character.transform.position).normalized;
+        targetDir.y = 0f;
+
+        if (Mathf.Abs(targetDir.x) < 0.1f)
+        {
+            targetDir.z = 0.7f;
+
+            if (targetDir.y < 0f)
+            {
+                targetDir.z = -0.7f;
+            }
+        }
+
+        targetDir.x *= 0.5f;
+
+        character.StartAttackSequence(targetRoom.character, targetRoom.character.transform.position + targetDir, 1f);
     }
 }

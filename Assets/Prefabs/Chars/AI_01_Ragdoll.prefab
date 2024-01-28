@@ -3088,7 +3088,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2345874439724000684}
-  - component: {fileID: 1740542654171001933}
   m_Layer: 0
   m_Name: AI_01_Ragdoll
   m_TagString: Untagged
@@ -3106,7 +3105,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.99111956, z: -0, w: 0.13297385}
   m_LocalPosition: {x: 4.0079, y: -4.0127, z: -2.8577}
-  m_LocalScale: {x: 4.3588, y: 4.3588, z: 4.3588}
+  m_LocalScale: {x: 0.4, y: 0.4, z: 0.4}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 7116051635769961995}
@@ -3122,27 +3121,6 @@ Transform:
   - {fileID: 6301277561398460276}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: -164.717, z: 0}
---- !u!95 &1740542654171001933
-Animator:
-  serializedVersion: 5
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6665312233932641160}
-  m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: d062293b4ff9e484e957ed9b2425753e, type: 3}
-  m_Controller: {fileID: 0}
-  m_CullingMode: 1
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 1
-  m_LinearVelocityBlending: 0
-  m_StabilizeFeet: 0
-  m_WarningMessage: 
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorStateOnDisable: 0
-  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &6693797083590701845
 GameObject:
   m_ObjectHideFlags: 0

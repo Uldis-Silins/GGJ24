@@ -87,7 +87,7 @@ public class LevelController : MonoBehaviour
             FocusOn(mainCamera, m_parentOffset, m_homeBounds, margin);
         }
 
-        //StartCoroutine(RandomizeRooms());
+        StartCoroutine(RandomizeRooms());
     }
 
     private void Update()

@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.44657844, g: 0.49641222, b: 0.57481676, a: 1}
+  m_IndirectSpecularColor: {r: 0.44657826, g: 0.49641263, b: 0.57481676, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -1050,6 +1050,7 @@ MonoBehaviour:
   characterData: {fileID: 0}
   characterSpawnLocation: {fileID: 0}
   character: {fileID: 0}
+  idlePoint: {fileID: 0}
   debugText: {fileID: 1192108598}
   debugQuad: {fileID: 1145369771}
 --- !u!1 &580103937
@@ -1273,6 +1274,7 @@ MonoBehaviour:
   characterData: {fileID: 0}
   characterSpawnLocation: {fileID: 0}
   character: {fileID: 0}
+  idlePoint: {fileID: 0}
   debugText: {fileID: 1047161961}
   debugQuad: {fileID: 1744304062}
 --- !u!1 &703144724
@@ -1715,6 +1717,7 @@ MonoBehaviour:
   characterData: {fileID: 0}
   characterSpawnLocation: {fileID: 0}
   character: {fileID: 0}
+  idlePoint: {fileID: 0}
   debugText: {fileID: 807544127}
   debugQuad: {fileID: 475441816}
 --- !u!1 &798382129
@@ -2855,6 +2858,7 @@ MonoBehaviour:
   characterData: {fileID: 0}
   characterSpawnLocation: {fileID: 0}
   character: {fileID: 0}
+  idlePoint: {fileID: 0}
   debugText: {fileID: 703144726}
   debugQuad: {fileID: 389339594}
 --- !u!1001 &1136148276
@@ -3430,6 +3434,7 @@ MonoBehaviour:
   characterData: {fileID: 0}
   characterSpawnLocation: {fileID: 0}
   character: {fileID: 0}
+  idlePoint: {fileID: 0}
   debugText: {fileID: 1540886824}
   debugQuad: {fileID: 105657268}
 --- !u!1 &1238729056
@@ -3508,6 +3513,7 @@ MonoBehaviour:
   characterData: {fileID: 0}
   characterSpawnLocation: {fileID: 0}
   character: {fileID: 0}
+  idlePoint: {fileID: 0}
   debugText: {fileID: 1562709927}
   debugQuad: {fileID: 1366074325}
 --- !u!1 &1245824225
@@ -4563,6 +4569,7 @@ MonoBehaviour:
   characterData: {fileID: 0}
   characterSpawnLocation: {fileID: 0}
   character: {fileID: 0}
+  idlePoint: {fileID: 0}
   debugText: {fileID: 255240724}
   debugQuad: {fileID: 1699740156}
 --- !u!4 &1761827402
@@ -4944,6 +4951,7 @@ MonoBehaviour:
   characterData: {fileID: 0}
   characterSpawnLocation: {fileID: 0}
   character: {fileID: 0}
+  idlePoint: {fileID: 0}
   debugText: {fileID: 841176409}
   debugQuad: {fileID: 1887606269}
 --- !u!1001 &299872059224073368
